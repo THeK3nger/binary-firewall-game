@@ -1,0 +1,28 @@
+{
+  "name": "binary_firewall",
+  "version": "0.1.0",
+  "release": "Offspring",
+  "description": "A simple puzzle/arcade game with Phaser.",
+  "author": "Davide Aversa <thek3nger@gmail.com> (www.davideaversa.it)",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "HTML5",
+    "game",
+    "canvas",
+    "2d",
+    "javascript"
+  ],
+  "devDependencies": {
+    "grunt": "^0.4.1",
+    "grunt-contrib-concat": "^0.4.0",
+    "grunt-contrib-connect": "^0.7.1",
+    "grunt-contrib-jshint": "^0.9.2",
+    "grunt-contrib-uglify": "^0.4.0",
+    "grunt-contrib-watch": "0.6.0",
+    "grunt-open": "^0.2.0",
+    "load-grunt-config": "~0.7.2"
+  }
+}
