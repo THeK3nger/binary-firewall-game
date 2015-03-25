@@ -4,27 +4,100 @@
 
 console.log("Binary Firewall Game || Version 0.1 || Davide Aversa 2015 (c)");
 
-var EnemyPackage = function(index, game, lane) {
-    var margin = 25;
-    var toatlLanes = 4;
-    var halfSpriteSize = 12;
+var GameData = function() {
+    this.phaser_game = new Phaser.Game(300, 600, Phaser.AUTO, 'binary-firewall', { preload: preload, create: create, render: render, update: update });
+    this.playerLife = 10;
+    this.enemies = [];
+    this.friendly = [];
+};
 
-    var x = margin + lane * ( (300 - 2*margin)/(toatlLanes-1));
+var EnemyPackage = function(index, game, lane) {
+    var halfSpriteSize = 12;
+    var x = getXByLane(lane);
     x = x - halfSpriteSize; // Center the sprite on the lane.
     var y = 200;
+    var speed = 0.2; // TODO: It should be dependant of match time! :)
 
     this.game = game;
     this.lane = lane;
     this.name = index.toString();
-    this.mainSprite = game.add.game.add.sprite(x,y,'en_nose', 0);
+    this.mainSprite = game.phaser_game.add.game.add.sprite(x,y,'en_nose', 0);
     this.animation = this.mainSprite.animations.add('walk');
     this.animation.play(2, true);
+    this.update = function() {
+        this.mainSprite.y += speed;
+        if (this.mainSprite.y >= 400) { // TODO: Make this parametric!
+
+        }
+    };
+    this.destroy = function() {
+        this.mainSprite.destroy();
+        var index = game.enemies.indexOf(this);
+        if (index > -1) {
+            game.enemies.splice(index,1);
+        }
+    };
 };
 
-var game = new Phaser.Game(300, 600, Phaser.AUTO, 'binary-firewall', { preload: preload, create: create, render: render, update: update });
+var FriendlyPackage = function(index, game, lane) {
+    var halfSpriteSize = 12;
+    var x = getXByLane(lane);
+    x = x - halfSpriteSize; // Center the sprite on the lane.
+    var y = 200;
+    var speed = 0.2; // TODO: It should be dependant of match time! :)
+
+    this.game = game;
+    this.lane = lane;
+    this.name = index.toString();
+    this.mainSprite = game.phaser_game.add.game.add.sprite(x,y,'friendly', 0);
+    this.animation = this.mainSprite.animations.add('walk');
+    this.animation.play(2, true);
+    this.update = function() {
+        this.mainSprite.y += speed;
+    };
+};
+
+var PlayerBullet = function(index, game, lane) {
+    var radius = 30;
+    var x = getXByLane(lane);
+    x = x - radius; // Center the sprite on the lane.
+    var y = 400;
+    var speed = 6;
+
+    this.game = game;
+    this.mainSprite = game.phaser_game.add.graphics(x, y);
+    this.update = function() {
+        this.mainSprite.y -= speed;
+        // Handle bullets out of the screen.
+        if (this.mainSprite.y < -10) {
+            this.destroyOnExit();
+        }
+    };
+    this.destroyOnExit = function() {
+        this.mainSprite.destroy();
+        var index = game.bullets.indexOf(this);
+        if (index > -1) {
+            game.bullets.splice(index,1);
+        } else {
+            console.log("BAD!");
+        }
+    };
+    this.render = function() {
+        this.mainSprite.beginFill(0xFF0000, 1);
+        this.mainSprite.drawCircle(radius, radius, 10);
+    };
+};
+
+var game = new GameData();
 game.numberBuffer = "00";
 game.numberBufferIndex = 0;
 game.bufferSize = 2;
+
+function getXByLane(lane) {
+    var margin = 25;
+    var totalLanes = 4;
+    return margin + lane * ( (300 - 2*margin)/(totalLanes-1));
+}
 
 /**
  * Convert a number into its binary representation.
@@ -65,7 +138,12 @@ function shoot() {
     if (isOverflow(num)){
         console.log("Overflow!");
     } else {
-        console.log(num2binary(num));
+        var stringCode =num2binary(num);
+        for (var i=0;i<stringCode.length;i++) {
+            if (stringCode[i] === '1') {
+                game.bullets.push(new PlayerBullet(1,game,i));
+            }
+        }
     }
     game.numberBuffer = "00";
     game.numberBufferIndex = 0;
@@ -75,7 +153,7 @@ function shoot() {
  * Draws on screen the input numeric sprites. TODO: And attach events to them.
  */
 function drawNumericInput() {
-    var numericInput = game.add.group();
+    var numericInput = game.phaser_game.add.group();
     var item;
 
     // Put Numbers
@@ -89,45 +167,58 @@ function drawNumericInput() {
 }
 /* jshint latedef: false */
 function preload() {
-    game.load.spritesheet('numbers','assets/font_number_sprite.png', 45, 45);
-    game.load.spritesheet('en_nose','assets/enemy_nose24x30.png',24,30);
+    game.phaser_game.load.spritesheet('numbers','assets/font_number_sprite.png', 45, 45);
+    game.phaser_game.load.spritesheet('en_nose','assets/enemy_nose24x30.png',24,30);
+    game.phaser_game.load.spritesheet('friendly','assets/friendly_thing24x30.png',24,30);
 }
 
 function create() {
-    game.renderer.renderSession.roundPixels = true;
+    var pgame = game.phaser_game;
+    pgame.renderer.renderSession.roundPixels = true;
     drawNumericInput();
-    var enemies = [];
-    enemies.push(new EnemyPackage(1,game,0));
-    enemies.push(new EnemyPackage(2,game,1));
-    enemies.push(new EnemyPackage(2,game,2));
-    enemies.push(new EnemyPackage(2,game,3));
+    game.enemies = [];
+    game.enemies.push(new EnemyPackage(1,game,0));
+    game.enemies.push(new EnemyPackage(2,game,1));
+    game.enemies.push(new FriendlyPackage(2,game,2));
+    game.enemies.push(new EnemyPackage(2,game,3));
 
-    game.textGUICode = game.add.text(game.world.centerX, 430, game.numberBuffer, { font: "65px Arial", fill: "#ffffff", align: "center" } );
+    game.bullets = [];
+
+    game.textGUICode = pgame.add.text(pgame.world.centerX, 450, game.numberBuffer, { font: "65px Arial", fill: "#ffffff", align: "center" } );
     game.textGUICode.anchor.set(0.5);
+
+    // Draw Line
+    var graphics = game.phaser_game.add.graphics(0, 0);
+
+    graphics.lineStyle(8, 0x33FF00);
+    graphics.moveTo(0,400);
+    graphics.lineTo(300, 400);
 
     // Setup Numeric Input
     // TODO: What does that "this" mean?
-    game.input.keyboard.addKey(Phaser.Keyboard.ONE).onDown.add(function() { numKeyPressed(1); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.TWO).onDown.add(function() { numKeyPressed(2); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.THREE).onDown.add(function() { numKeyPressed(3); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.FOUR).onDown.add(function() { numKeyPressed(4); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.FIVE).onDown.add(function() { numKeyPressed(5); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.SIX).onDown.add(function() { numKeyPressed(6); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.SEVEN).onDown.add(function() { numKeyPressed(7); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.EIGHT).onDown.add(function() { numKeyPressed(8); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.NINE).onDown.add(function() { numKeyPressed(9); }, this);
-    game.input.keyboard.addKey(Phaser.Keyboard.ZERO).onDown.add(function() { numKeyPressed(0); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.ONE).onDown.add(function() { numKeyPressed(1); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.TWO).onDown.add(function() { numKeyPressed(2); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.THREE).onDown.add(function() { numKeyPressed(3); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.FOUR).onDown.add(function() { numKeyPressed(4); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.FIVE).onDown.add(function() { numKeyPressed(5); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.SIX).onDown.add(function() { numKeyPressed(6); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.SEVEN).onDown.add(function() { numKeyPressed(7); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.EIGHT).onDown.add(function() { numKeyPressed(8); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.NINE).onDown.add(function() { numKeyPressed(9); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.ZERO).onDown.add(function() { numKeyPressed(0); }, this);
 
     // Setup Shoot Input
-    game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR).onDown.add(shoot, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR).onDown.add(shoot, this);
 
 }
 
 function render() {
     game.textGUICode.text = game.numberBuffer;
+    game.bullets.forEach(function(x) { x.render(); });
 }
 
 function update() {
-
+    game.bullets.forEach(function(x) { x.update(); });
+    game.enemies.forEach(function(x) { x.update(); });
 }
 /* jshint latedef: true */
