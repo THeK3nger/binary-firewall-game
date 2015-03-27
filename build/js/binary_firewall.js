@@ -27,7 +27,7 @@ var EnemyPackage = function(index, game, lane) {
     this.update = function() {
         this.mainSprite.y += speed;
         if (this.mainSprite.y >= 400) { // TODO: Make this parametric!
-
+            this.enemyHit();
         }
     };
     this.destroy = function() {
@@ -36,6 +36,11 @@ var EnemyPackage = function(index, game, lane) {
         if (index > -1) {
             game.enemies.splice(index,1);
         }
+    };
+    this.enemyHit = function() {
+        this.game.playerLife--;
+        console.log("ENEMY HIT: PlayerLife = " + this.game.playerLife);
+        this.destroy();
     };
 };
 
