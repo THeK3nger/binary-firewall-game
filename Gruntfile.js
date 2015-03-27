@@ -3,6 +3,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-open');
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-babel');
 
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
@@ -24,11 +25,21 @@ module.exports = function (grunt) {
         },
         watch: {
             files: 'src/**/*.js',
-            tasks: ['concat']
+            tasks: ['concat', 'babel']
         },
         open: {
             dev: {
                 path: 'http://localhost:8080/index.html'
+            }
+        },
+        babel: {
+            options: {
+                sourceMap: true
+            },
+            dist: {
+                files: {
+                    "build/js/<%= pkg.name %>.js": 'build/js/<%= pkg.name %>.js'
+                }
             }
         }
     });
