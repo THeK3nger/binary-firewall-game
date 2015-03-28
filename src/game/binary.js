@@ -4,94 +4,109 @@
 
 console.log("Binary Firewall Game || Version 0.1 || Davide Aversa 2015 (c)");
 
-var GameData = function() {
-    this.phaser_game = new Phaser.Game(300, 600, Phaser.AUTO, 'binary-firewall', { preload: preload, create: create, render: render, update: update });
-    this.playerLife = 10;
-    this.enemies = [];
-    this.friendly = [];
-};
+class GameData {
+    constructor() {
+        this.phaser_game = new Phaser.Game(300, 600, Phaser.AUTO, 'binary-firewall', { preload: preload, create: create, render: render, update: update });
+        this.playerLife = 10;
+        this.enemies = [];
+        this.friendly = [];
+    }
+}
 
-var EnemyPackage = function(index, game, lane) {
-    var halfSpriteSize = 12;
-    var x = getXByLane(lane);
-    x = x - halfSpriteSize; // Center the sprite on the lane.
-    var y = 200;
-    var speed = 0.2; // TODO: It should be dependant of match time! :)
+class EnemyPackage {
+    constructor(index, game, lane) {
+        let halfSpriteSize = 12;
+        let x = getXByLane(lane) - halfSpriteSize;
+        let y = 200;
 
-    this.game = game;
-    this.lane = lane;
-    this.name = index.toString();
-    this.mainSprite = game.phaser_game.add.game.add.sprite(x,y,'en_nose', 0);
-    this.animation = this.mainSprite.animations.add('walk');
-    this.animation.play(2, true);
-    this.update = function() {
-        this.mainSprite.y += speed;
+        this.speed = 0.2; // TODO: It should be dependant of match time! :)
+
+        this.game = game;
+        this.lane = lane;
+        this.name = index.toString();
+        this.mainSprite = game.phaser_game.add.game.add.sprite(x,y,'en_nose', 0);
+        this.animation = this.mainSprite.animations.add('walk');
+        this.animation.play(2, true);
+    }
+
+    update() {
+        this.mainSprite.y += this.speed;
         if (this.mainSprite.y >= 400) { // TODO: Make this parametric!
             this.enemyHit();
         }
-    };
-    this.destroy = function() {
+    }
+
+    destroy(){
         this.mainSprite.destroy();
-        var index = game.enemies.indexOf(this);
+        let index = game.enemies.indexOf(this);
         if (index > -1) {
             game.enemies.splice(index,1);
         }
-    };
-    this.enemyHit = function() {
+    }
+
+    enemyHit() {
         this.game.playerLife--;
         console.log("ENEMY HIT: PlayerLife = " + this.game.playerLife);
         this.destroy();
-    };
-};
+    }
+}
 
-var FriendlyPackage = function(index, game, lane) {
-    var halfSpriteSize = 12;
-    var x = getXByLane(lane);
-    x = x - halfSpriteSize; // Center the sprite on the lane.
-    var y = 200;
-    var speed = 0.2; // TODO: It should be dependant of match time! :)
+class FriendlyPackage {
+    constructor(index, game, lane) {
+        let halfSpriteSize = 12;
+        let x = getXByLane(lane) - halfSpriteSize;
+        let y = 200;
 
-    this.game = game;
-    this.lane = lane;
-    this.name = index.toString();
-    this.mainSprite = game.phaser_game.add.game.add.sprite(x,y,'friendly', 0);
-    this.animation = this.mainSprite.animations.add('walk');
-    this.animation.play(2, true);
-    this.update = function() {
-        this.mainSprite.y += speed;
-    };
-};
+        this.speed = 0.2; // TODO: It should be dependant of match time! :)
+        this.game = game;
+        this.lane = lane;
+        this.name = index.toString();
+        this.mainSprite = game.phaser_game.add.game.add.sprite(x,y,'friendly', 0);
+        this.animation = this.mainSprite.animations.add('walk');
+        this.animation.play(2, true);
+    }
 
-var PlayerBullet = function(index, game, lane) {
-    var radius = 30;
-    var x = getXByLane(lane);
-    x = x - radius; // Center the sprite on the lane.
-    var y = 400;
-    var speed = 6;
+    update() {
+        this.mainSprite.y += this.speed;
+    }
+}
 
-    this.game = game;
-    this.mainSprite = game.phaser_game.add.graphics(x, y);
-    this.update = function() {
-        this.mainSprite.y -= speed;
+class PlayerBullet {
+    constructor(index, game, lane) {
+        this.radius = 30;
+        var x = getXByLane(lane);
+        x = x - this.radius; // Center the sprite on the lane.
+        var y = 400;
+
+        this.speed = 6;
+
+        this.game = game;
+        this.mainSprite = game.phaser_game.add.graphics(x, y);
+    }
+
+    update() {
+        this.mainSprite.y -= this.speed;
         // Handle bullets out of the screen.
         if (this.mainSprite.y < -10) {
             this.destroyOnExit();
         }
-    };
-    this.destroyOnExit = function() {
+    }
+
+    destroyOnExit() {
         this.mainSprite.destroy();
-        var index = game.bullets.indexOf(this);
+        let index = game.bullets.indexOf(this);
         if (index > -1) {
             game.bullets.splice(index,1);
         } else {
             console.log("BAD!");
         }
-    };
-    this.render = function() {
+    }
+
+    render() {
         this.mainSprite.beginFill(0xFF0000, 1);
-        this.mainSprite.drawCircle(radius, radius, 10);
-    };
-};
+        this.mainSprite.drawCircle(this.radius, this.radius, 10);
+    }
+}
 
 var game = new GameData();
 game.numberBuffer = "00";
@@ -162,11 +177,11 @@ function drawNumericInput() {
     var item;
 
     // Put Numbers
-    for (var i=0;i<5;i++) {
+    for (let i=0;i<5;i++) {
         item = numericInput.create(25+50*i, 500, 'numbers', i);
     }
 
-    for (i=0;i<5;i++) {
+    for (let i=0;i<5;i++) {
         item = numericInput.create(25+50*i, 550, 'numbers', i+5);
     }
 }
@@ -201,29 +216,28 @@ function create() {
 
     // Setup Numeric Input
     // TODO: What does that "this" mean?
-    pgame.input.keyboard.addKey(Phaser.Keyboard.ONE).onDown.add(function() { numKeyPressed(1); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.TWO).onDown.add(function() { numKeyPressed(2); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.THREE).onDown.add(function() { numKeyPressed(3); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.FOUR).onDown.add(function() { numKeyPressed(4); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.FIVE).onDown.add(function() { numKeyPressed(5); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.SIX).onDown.add(function() { numKeyPressed(6); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.SEVEN).onDown.add(function() { numKeyPressed(7); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.EIGHT).onDown.add(function() { numKeyPressed(8); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.NINE).onDown.add(function() { numKeyPressed(9); }, this);
-    pgame.input.keyboard.addKey(Phaser.Keyboard.ZERO).onDown.add(function() { numKeyPressed(0); }, this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.ONE).onDown.add(() => numKeyPressed(1), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.TWO).onDown.add(() => numKeyPressed(2), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.THREE).onDown.add(() => numKeyPressed(3), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.FOUR).onDown.add(() => numKeyPressed(4), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.FIVE).onDown.add(() => numKeyPressed(5), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.SIX).onDown.add(() => numKeyPressed(6), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.SEVEN).onDown.add(() => numKeyPressed(7), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.EIGHT).onDown.add(() => numKeyPressed(8), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.NINE).onDown.add(() => numKeyPressed(9), this);
+    pgame.input.keyboard.addKey(Phaser.Keyboard.ZERO).onDown.add(() => numKeyPressed(0), this);
 
     // Setup Shoot Input
     pgame.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR).onDown.add(shoot, this);
-
 }
 
 function render() {
     game.textGUICode.text = game.numberBuffer;
-    game.bullets.forEach(function(x) { x.render(); });
+    game.bullets.forEach((x) => x.render());
 }
 
 function update() {
-    game.bullets.forEach(function(x) { x.update(); });
-    game.enemies.forEach(function(x) { x.update(); });
+    game.bullets.forEach((x) => x.update());
+    game.enemies.forEach((x) => x.update());
 }
 /* jshint latedef: true */
