@@ -304,6 +304,11 @@ function render() {
     });
 }
 
+function collisionHandler(bullet, pack) {
+    bullet.kill();
+    pack.kill();
+}
+
 function update() {
     game.bullets.forEach(function (x) {
         return x.update();
@@ -311,6 +316,9 @@ function update() {
     game.enemies.forEach(function (x) {
         return x.update();
     });
+
+    // Check Collisions Between Bullets and Packages
+    game.phaser_game.physics.arcade.overlap(game.gBullets, game.packages, collisionHandler, null, this);
 }
 /* jshint latedef: true */
 //# sourceMappingURL=binary_firewall.js.map

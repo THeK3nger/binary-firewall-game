@@ -247,8 +247,16 @@ function render() {
     game.bullets.forEach((x) => x.render());
 }
 
+function collisionHandler(bullet, pack) {
+    bullet.kill();
+    pack.kill();
+}
+
 function update() {
     game.bullets.forEach((x) => x.update());
     game.enemies.forEach((x) => x.update());
+
+    // Check Collisions Between Bullets and Packages
+    game.phaser_game.physics.arcade.overlap(game.gBullets, game.packages, collisionHandler, null, this);
 }
 /* jshint latedef: true */
