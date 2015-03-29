@@ -10,6 +10,12 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
 
 console.log("Binary Firewall Game || Version 0.1 || Davide Aversa 2015 (c)");
 
+function getXByLane(lane) {
+    var margin = 25;
+    var totalLanes = 4;
+    return margin + lane * ((300 - 2 * margin) / (totalLanes - 1));
+}
+
 var GameData = function GameData() {
     _classCallCheck(this, GameData);
 
@@ -32,7 +38,7 @@ var EnemyPackage = (function () {
         this.game = game;
         this.lane = lane;
         this.name = index.toString();
-        this.mainSprite = game.phaser_game.add.game.add.sprite(x, y, "en_nose", 0);
+        this.mainSprite = game.packages.create(x, y, "en_nose", 0);
         this.animation = this.mainSprite.animations.add("walk");
         this.animation.play(2, true);
     }
@@ -80,7 +86,7 @@ var FriendlyPackage = (function () {
         this.game = game;
         this.lane = lane;
         this.name = index.toString();
-        this.mainSprite = game.phaser_game.add.game.add.sprite(x, y, "friendly", 0);
+        this.mainSprite = game.packages.create(x, y, "friendly", 0);
         this.animation = this.mainSprite.animations.add("walk");
         this.animation.play(2, true);
     }
@@ -100,15 +106,15 @@ var PlayerBullet = (function () {
     function PlayerBullet(index, game, lane) {
         _classCallCheck(this, PlayerBullet);
 
-        this.radius = 30;
+        this.size = 24;
         var x = getXByLane(lane);
-        x = x - this.radius; // Center the sprite on the lane.
+        x = x - this.size / 2; // Center the sprite on the lane.
         var y = 400;
 
         this.speed = 6;
-
+        this.name = "PlayerBullet" + String(index);
         this.game = game;
-        this.mainSprite = game.phaser_game.add.graphics(x, y);
+        this.mainSprite = this.game.gBullets.create(x, y, "bullet");
     }
 
     _createClass(PlayerBullet, {
@@ -133,10 +139,7 @@ var PlayerBullet = (function () {
             }
         },
         render: {
-            value: function render() {
-                this.mainSprite.beginFill(16711680, 1);
-                this.mainSprite.drawCircle(this.radius, this.radius, 10);
-            }
+            value: function render() {}
         }
     });
 
@@ -147,12 +150,6 @@ var game = new GameData();
 game.numberBuffer = "00";
 game.numberBufferIndex = 0;
 game.bufferSize = 2;
-
-function getXByLane(lane) {
-    var margin = 25;
-    var totalLanes = 4;
-    return margin + lane * ((300 - 2 * margin) / (totalLanes - 1));
-}
 
 /**
  * Convert a number into its binary representation.
@@ -227,12 +224,24 @@ function preload() {
     game.phaser_game.load.spritesheet("numbers", "assets/font_number_sprite.png", 45, 45);
     game.phaser_game.load.spritesheet("en_nose", "assets/enemy_nose24x30.png", 24, 30);
     game.phaser_game.load.spritesheet("friendly", "assets/friendly_thing24x30.png", 24, 30);
+    game.phaser_game.load.image("bullet", "assets/bullet24x24.png");
 }
 
 function create() {
     var pgame = game.phaser_game;
     pgame.renderer.renderSession.roundPixels = true;
     drawNumericInput();
+
+    // Setup Group for Enemies/Friendly Packages
+    game.packages = game.phaser_game.add.group();
+    game.packages.enableBody = true;
+    game.packages.physicsBodyType = Phaser.Physics.ARCADE;
+
+    // Setup Group for Bullets
+    game.gBullets = game.phaser_game.add.group();
+    game.gBullets.enableBody = true;
+    game.gBullets.physicsBodyType = Phaser.Physics.ARCADE;
+
     game.enemies = [];
     game.enemies.push(new EnemyPackage(1, game, 0));
     game.enemies.push(new EnemyPackage(2, game, 1));
