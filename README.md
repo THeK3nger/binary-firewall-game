@@ -2,9 +2,4 @@
 
 ## What is this?
 
-Test
-
- * Test1
- * Test2
-
-PPpp *sss* rrrgrg **rtrtr** ok!
+Binary Firewall is a completely simple game I made to learn direct JS and web game development.
