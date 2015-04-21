@@ -4,11 +4,19 @@
 
 console.log("Binary Firewall Game || Version 0.1 || Davide Aversa 2015 (c)");
 
-function getXByLane(lane) {
-    var margin = 25;
-    var totalLanes = 4;
-    return margin + lane * ( (300 - 2*margin)/(totalLanes-1));
+/*****************************************************************************
+ GENERAL UTILITY
+/*****************************************************************************/
+
+/**
+ * Convert a number into its binary representation.
+ * @param num the input number.
+ * @returns {String} The result binary string.
+ */
+function num2binary(num) {
+    return num.toString(2);
 }
+
 
 class GameData {
     constructor() {
@@ -16,13 +24,32 @@ class GameData {
         this.playerLife = 10;
         this.enemies = [];
         this.friendly = [];
+        this.lifeBar = new LifeBar(this.playerLife, this);
+
+        // Configurations
+        this.margin = 25;
+        this.totalLanes = 5;
+
+    }
+
+    getXByLane(lane) {
+        return this.margin + lane * ( (300 - 2*this.margin)/(this.totalLanes-1));
+    }
+
+    /**
+     * check if the binary representation is an overflow respect the maximum number of lane in the current game.
+     * @param num The input number.
+     * @returns {boolean}
+     */
+    numIsOverflow(num) {
+        return num > Math.pow(2,this.totalLanes)-1;
     }
 }
 
 class EnemyPackage {
     constructor(index, game, lane) {
         let halfSpriteSize = 12;
-        let x = getXByLane(lane) - halfSpriteSize;
+        let x = game.getXByLane(lane) - halfSpriteSize;
         let y = 200;
 
         this.speed = 0.2; // TODO: It should be dependant of match time! :)
@@ -51,8 +78,8 @@ class EnemyPackage {
     }
 
     enemyHit() {
-        this.game.playerLife--;
-        console.log("ENEMY HIT: PlayerLife = " + this.game.playerLife);
+        this.game.lifeBar.decreaseLife();
+        console.log("ENEMY HIT: PlayerLife = " + this.game.lifeBar.lifePoints);
         this.destroy();
     }
 }
@@ -60,7 +87,7 @@ class EnemyPackage {
 class FriendlyPackage {
     constructor(index, game, lane) {
         let halfSpriteSize = 12;
-        let x = getXByLane(lane) - halfSpriteSize;
+        let x = game.getXByLane(lane) - halfSpriteSize;
         let y = 200;
 
         this.speed = 0.2; // TODO: It should be dependant of match time! :)
@@ -80,7 +107,7 @@ class FriendlyPackage {
 class PlayerBullet {
     constructor(index, game, lane) {
         this.size = 24;
-        var x = getXByLane(lane);
+        var x = game.getXByLane(lane);
         x = x - this.size/2; // Center the sprite on the lane.
         var y = 400;
 
@@ -113,19 +140,78 @@ class PlayerBullet {
     }
 }
 
+class LifeBar {
+    constructor(maxLife, game, deathCallback) {
+        this.maxLife = maxLife;
+        this.lifePoints  = maxLife;
+        this.game = game;
+        this.deathCallback = deathCallback;
+        this.initialized = false;
+    }
+
+    init() {
+        if (!this.initialized) {
+            this.lifeSpriteElements = [];
+            for (let i = 0; i < this.lifePoints; i++) {
+                this.lifeSpriteElements.push(this.game.uiElements.create((24+5)*i,0,'hearth'));
+            }
+        }
+    }
+
+    decreaseLife() {
+        this.lifePoints = Math.max(0,this.lifePoints-1);
+        this.lifeSpriteElements[this.lifePoints].visible = false;
+        if (this.lifePoints <= 0) {
+            this.deathCallback();
+            return;
+        }
+
+
+    }
+
+    increaseLife() {
+        this.lifePoints = Math.min(this.maxLife, this.lifePoints+1);
+        this.lifeSpriteElements[this.lifePoints-1].visible = true;
+    }
+
+    drawUI() {
+        this.mainSprite = this.game.uiElements.create(0,0,'hearth');
+    }
+}
+
+/**
+ * Spawn a wave of enemy/friends.
+ */
+function spawn() {
+    /**
+     * Generate a random array of size "size" with random elements picked in the value array.
+     * @param values
+     * @param size
+     */
+    let randomArray = function(values, size) {
+        let result = [];
+        for (let i=0;i<size;i++) {
+            result.push(values[Math.floor(Math.random() * values.length)]);
+        }
+        return result;
+    };
+    let pattern = randomArray([0,1,2], 5);
+    for (let i=0;i<pattern.length;i++) {
+            switch (pattern[i]) {
+                case 1:
+                    game.enemies.push(new EnemyPackage(1, game, i));
+                    break;
+                case 2:
+                    game.enemies.push(new FriendlyPackage(1, game, i));
+                    break;
+            }
+    }
+}
+
 var game = new GameData();
 game.numberBuffer = "00";
 game.numberBufferIndex = 0;
 game.bufferSize = 2;
-
-/**
- * Convert a number into its binary representation.
- * @param num the input number.
- * @returns {String} The result binary string.
- */
-function num2binary(num) {
-    return num.toString(2);
-}
 
 /**
  * Add the current number to the input buffer.
@@ -140,21 +226,11 @@ function numKeyPressed(num) {
 }
 
 /**
- * check if the binary representation is an overflow respect the maximum number of lane in the current game.
- * @param num The input number.
- * @returns {boolean}
- */
-function isOverflow(num) {
-    var totalLanes = 4; // TODO: Move in the game object.
-    return num > Math.pow(2,totalLanes)-1;
-}
-
-/**
  * Preforms the shoot action.
  */
 function shoot() {
     var num = parseInt(game.numberBuffer,10);
-    if (isOverflow(num)){
+    if (game.numIsOverflow(num)){
         console.log("Overflow!");
     } else {
         var stringCode =num2binary(num);
@@ -168,63 +244,8 @@ function shoot() {
     game.numberBufferIndex = 0;
 }
 
-/**
- * Draws on screen the input numeric sprites. TODO: And attach events to them.
- */
-function drawNumericInput() {
-    var numericInput = game.phaser_game.add.group();
-    var item;
-
-    // Put Numbers
-    for (let i=0;i<5;i++) {
-        item = numericInput.create(25+50*i, 500, 'numbers', i);
-    }
-
-    for (let i=0;i<5;i++) {
-        item = numericInput.create(25+50*i, 550, 'numbers', i+5);
-    }
-}
-/* jshint latedef: false */
-function preload() {
-    game.phaser_game.load.spritesheet('numbers','assets/font_number_sprite.png', 45, 45);
-    game.phaser_game.load.spritesheet('en_nose','assets/enemy_nose24x30.png',24,30);
-    game.phaser_game.load.spritesheet('friendly','assets/friendly_thing24x30.png',24,30);
-    game.phaser_game.load.image('bullet','assets/bullet24x24.png');
-}
-
-function create() {
-    var pgame = game.phaser_game;
-    pgame.renderer.renderSession.roundPixels = true;
-    drawNumericInput();
-
-    // Setup Group for Enemies/Friendly Packages
-    game.packages = game.phaser_game.add.group();
-    game.packages.enableBody = true;
-    game.packages.physicsBodyType = Phaser.Physics.ARCADE;
-
-    // Setup Group for Bullets
-    game.gBullets = game.phaser_game.add.group();
-    game.gBullets.enableBody = true;
-    game.gBullets.physicsBodyType = Phaser.Physics.ARCADE;
-
-    game.enemies = [];
-    game.enemies.push(new EnemyPackage(1,game,0));
-    game.enemies.push(new EnemyPackage(2,game,1));
-    game.enemies.push(new FriendlyPackage(2,game,2));
-    game.enemies.push(new EnemyPackage(2,game,3));
-
-    game.bullets = [];
-
-    game.textGUICode = pgame.add.text(pgame.world.centerX, 450, game.numberBuffer, { font: "65px Arial", fill: "#ffffff", align: "center" } );
-    game.textGUICode.anchor.set(0.5);
-
-    // Draw Line
-    var graphics = game.phaser_game.add.graphics(0, 0);
-
-    graphics.lineStyle(8, 0x33FF00);
-    graphics.moveTo(0,400);
-    graphics.lineTo(300, 400);
-
+function inizializeInput() {
+    let pgame = game.phaser_game;
     // Setup Numeric Input
     // TODO: What does that "this" mean?
     pgame.input.keyboard.addKey(Phaser.Keyboard.ONE).onDown.add(() => numKeyPressed(1), this);
@@ -240,6 +261,53 @@ function create() {
 
     // Setup Shoot Input
     pgame.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR).onDown.add(shoot, this);
+}
+
+function preload() {
+    game.phaser_game.load.spritesheet('numbers','assets/font_number_sprite.png', 45, 45);
+    game.phaser_game.load.spritesheet('en_nose','assets/enemy_nose24x30.png',24,30);
+    game.phaser_game.load.spritesheet('friendly','assets/friendly_thing24x30.png',24,30);
+    game.phaser_game.load.image('bullet','assets/bullet24x24.png');
+    game.phaser_game.load.image('hearth','assets/hearth24x24.png');
+}
+
+function create() {
+    let pgame = game.phaser_game;
+    pgame.renderer.renderSession.roundPixels = true;
+
+    // Setup Group for Enemies/Friendly Packages
+    game.packages = game.phaser_game.add.group();
+    game.packages.enableBody = true;
+    game.packages.physicsBodyType = Phaser.Physics.ARCADE;
+
+    // Setup Group for Bullets
+    game.gBullets = game.phaser_game.add.group();
+    game.gBullets.enableBody = true;
+    game.gBullets.physicsBodyType = Phaser.Physics.ARCADE;
+
+    game.uiElements = game.phaser_game.add.group();
+
+    game.enemies = [];
+    game.enemies.push(new EnemyPackage(1,game,0));
+    game.enemies.push(new EnemyPackage(2,game,1));
+    game.enemies.push(new FriendlyPackage(2,game,2));
+    game.enemies.push(new EnemyPackage(2,game,3));
+
+    game.bullets = [];
+
+    game.textGUICode = pgame.add.text(pgame.world.centerX, 550, game.numberBuffer, { font: "65px Arial", fill: "#ffffff", align: "center" } );
+    game.textGUICode.anchor.set(0.5);
+
+    // Draw Line
+    var graphics = game.phaser_game.add.graphics(0, 0);
+    graphics.lineStyle(8, 0x33FF00);
+    graphics.moveTo(0,500);
+    graphics.lineTo(300, 500);
+
+    inizializeInput();
+    game.lifeBar.init();
+
+    pgame.time.events.loop(Phaser.Timer.SECOND * 3, spawn, this);
 }
 
 function render() {

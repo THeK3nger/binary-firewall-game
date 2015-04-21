@@ -26,7 +26,7 @@
   "freeze"      : true,   // Prohibits overwriting prototypes of native objects such as Array and Date.
   "funcscope"   : true,   // This option suppresses warnings about declaring variables inside of control structures while accessing them later from the outside.
   "immed"       : true,   // Require immediate invocations to be wrapped in parens e.g. `( function(){}() );`
-  "latedef"     : true,   // Prohibit variable use before definition.
+  "latedef"     : false,   // Prohibit variable use before definition.
   "laxbreak"    : false,  // Tolerate unsafe line breaks e.g. `return [\n] x` without semicolons.
   "laxcomma"    : false,  // This option suppresses warnings about comma-first coding style.
   "loopfunc"    : true,   // Allow functions to be defined within loops.
