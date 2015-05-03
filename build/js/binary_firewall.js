@@ -20,7 +20,12 @@ console.log("Binary Firewall Game || Version 0.1 || Davide Aversa 2015 (c)");
  * @returns {String} The result binary string.
  */
 function num2binary(num) {
-    return num.toString(2);
+    var res = num.toString(2);
+    // Res must be padded with 0s until totalLanes is reached.
+    while (res.length < 5) {
+        res = "0" + res;
+    }
+    return res;
 }
 
 var GameData = (function () {
@@ -32,6 +37,7 @@ var GameData = (function () {
         this.enemies = [];
         this.friendly = [];
         this.lifeBar = new LifeBar(this.playerLife, this);
+        this.score = 0;
 
         // Configurations
         this.margin = 25;
@@ -83,7 +89,7 @@ var EnemyPackage = (function () {
         update: {
             value: function update() {
                 this.mainSprite.y += this.speed;
-                if (this.mainSprite.y >= 400) {
+                if (this.mainSprite.y >= 450) {
                     // TODO: Make this parametric!
                     this.enemyHit();
                 }
@@ -131,6 +137,16 @@ var FriendlyPackage = (function () {
         update: {
             value: function update() {
                 this.mainSprite.y += this.speed;
+                if (this.mainSprite.y >= 450) {
+                    // TODO: Make this parametric!
+                    this.friendlyHit();
+                }
+            }
+        },
+        friendlyHit: {
+            value: function friendlyHit() {
+                this.mainSprite.destroy();
+                game.score += 1;
             }
         }
     });
